@@ -8,9 +8,9 @@ A comparative study of three deep learning architectures for binary sentiment cl
 
 | Notebook | Embeddings | Model | Accuracy | F1-Score | AUC-ROC |
 |---|---|---|---|---|---|
-| `bert_transformer.ipynb` | BERT (`bert-base-uncased`) | BERT + Custom Transformer Head | **90.89%** | — | — |
+| `bert_transformer.ipynb` | BERT (`bert-base-uncased`) | BERT + Custom Transformer Head | **91.10%** | **0.9115** | **0.9704** |
 | `glove_transformer.ipynb` | GloVe 6B 100d (frozen) | Transformer (from scratch) | 85.36% | 0.8569 | 0.9324 |
-| `fasttext_transformer.ipynb` | FastText crawl-300d-2M (frozen) | Transformer (from scratch) | 87.80% | **0.8819** | **0.9520** |
+| `fasttext_transformer.ipynb` | FastText crawl-300d-2M (frozen) | Transformer (from scratch) | 87.80% | 0.8819 | 0.9520 |
 
 **Dataset:** IMDb — 25,000 training reviews / 25,000 test reviews (binary: Positive / Negative)
 
@@ -44,22 +44,26 @@ All three notebooks follow the same structured pipeline so results are directly 
    - *Word dropout* — randomly removes words
    - *OOV injection* — replaces words with out-of-vocabulary tokens
 9. **Interpretability (LIME)** — explains individual predictions by identifying the words most influential to the model's decision (confident positives, confident negatives, wrong predictions, noisy inputs)
-10. **Interpretability (t-SNE / Attention)** — GloVe & FastText notebooks visualize word vector space with t-SNE; the BERT notebook visualizes attention weights from the `[CLS]` token
+10. **Interpretability (t-SNE & Attention)** — all three notebooks visualize the embedding vector space with t-SNE (GloVe/FastText use static word vectors; BERT uses 768d `[CLS]` embeddings); the BERT notebook additionally visualizes per-token attention weights from the `[CLS]` token
 11. **Final Summary** — F1-score heatmap across all test conditions
 
 ---
 
 ## Key Results
 
-### Noise Robustness (F1-Score drop from clean baseline)
+### Noise Robustness (F1-Score at each noise level)
 
 | Noise Type | BERT | GloVe Transformer | FastText Transformer |
 |---|---|---|---|
-| Char noise @ 50% | −0.0801 | −0.0859 | — |
-| Word dropout @ 50% | −0.0656 | −0.0600 | — |
-| OOV injection @ 50% | **−0.2986** | −0.0937 | — |
+| Clean baseline | 0.9115 | 0.8569 | 0.8819 |
+| Char noise @ 10% | 0.8970 | 0.8443 | 0.8770 |
+| Char noise @ 30% | 0.8600 | 0.8225 | 0.8581 |
+| Word dropout @ 10% | 0.9034 | 0.8477 | 0.8773 |
+| Word dropout @ 30% | 0.8806 | 0.8251 | 0.8616 |
+| OOV injection @ 10% | 0.8977 | 0.8461 | 0.8781 |
+| OOV injection @ 30% | 0.8293 | 0.8192 | 0.8620 |
 
-BERT is most sensitive to OOV injection because its subword tokenizer handles character noise gracefully but struggles when real words are replaced with unknown tokens at high rates. The GloVe and FastText Transformer models degrade more uniformly across all noise types.
+BERT leads across all conditions but shows the steepest drop under OOV injection, since its subword tokenizer handles character noise gracefully but is more disrupted when real words are swapped out entirely. The GloVe and FastText Transformer models degrade more uniformly across all noise types.
 
 ---
 
@@ -117,10 +121,11 @@ The Transformer architecture is shared across notebooks. Key parameters:
 
 ## Takeaways
 
-- **BERT achieves the highest accuracy (~91%)** through fine-tuning a pre-trained contextual model, but requires a GPU and significantly more compute.
+- **BERT achieves the highest scores across all metrics** — F1 0.9115, Accuracy 91.1%, AUC-ROC 0.9704 — through fine-tuning a pre-trained contextual model, but requires a GPU and significantly more compute.
 - **FastText outperforms GloVe** on F1-score (0.882 vs. 0.857) and AUC-ROC (0.952 vs. 0.932) thanks to its higher-dimensional subword-aware vectors (300d vs. 100d).
-- **All three models are robust to character noise and word dropout** but show steeper degradation under heavy OOV injection, especially BERT.
+- **All three models are robust to character noise and word dropout** but show steeper degradation under heavy OOV injection, most notably BERT (F1 drops from 0.9115 to 0.8293 at 30% OOV).
 - **LIME explanations** confirm that all models correctly focus on sentiment-bearing words (e.g., *brilliant*, *terrible*) rather than neutral content words.
+- **t-SNE visualizations** across all three notebooks show clear clustering of positive and negative sentiment words, confirming that each embedding space provides meaningful geometry for the classifier.
 
 ---
 
